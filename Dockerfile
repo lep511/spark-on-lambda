@@ -3,10 +3,10 @@ FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.11
 # Setting the compatible versions of libraries
 ARG HADOOP_VERSION=3.2.4
 ARG AWS_SDK_VERSION=1.11.901
-ARG PYSPARK_VERSION=3.3.0
+ARG PYSPARK_VERSION=3.5.2
 
 #FRAMEWORK will passed during the Docker build. For Apache Iceberg in somecase downgrading PYSPARK_VERSION to 3.2.0 will be good
-ARG FRAMEWORK
+ARG FRAMEWORK="ICEBERG"
 ARG DELTA_FRAMEWORK_VERSION=2.2.0
 ARG HUDI_FRAMEWORK_VERSION=0.12.2
 
@@ -15,7 +15,7 @@ ARG ICEBERG_FRAMEWORK_VERSION=3.3_2.12
 ARG ICEBERG_FRAMEWORK_SUB_VERSION=1.0.0
 
 
-ARG DEEQU_FRAMEWORK_VERSION=2.0.3-spark-3.3
+ARG DEEQU_FRAMEWORK_VERSION=2.0.3-spark-3.5
 
 
 # Perform system updates and install dependencies
@@ -38,8 +38,8 @@ RUN echo "$FRAMEWORK" | grep -q "DEEQU" && \
      echo "DEEQU not found in FRAMEWORK"
 
 # Set environment variables for PySpark
-ENV SPARK_HOME="/var/lang/lib/python3.8/site-packages/pyspark"
-ENV SPARK_VERSION=3.3.0
+ENV SPARK_HOME="/var/lang/lib/python3.11/site-packages/pyspark"
+ENV SPARK_VERSION=3.5.2
 ENV PATH=$PATH:$SPARK_HOME/bin
 ENV PATH=$PATH:$SPARK_HOME/sbin
 ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.9-src.zip:/home/glue_functions:$PYTHONPATH

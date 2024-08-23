@@ -1,4 +1,3 @@
-import sys
 import os
 import pydeequ
 import uuid
@@ -36,11 +35,6 @@ from pyspark.sql.functions import *
 """
 
 if __name__ == "__main__":
-
-    print(len(sys.argv))
-    if (len(sys.argv) != 3):
-        print("Usage: spark-dq [input-folder] [output-folder]")
-        sys.exit(0)
 
     input_path = "accommodations.csv"
     output_path = "./"
