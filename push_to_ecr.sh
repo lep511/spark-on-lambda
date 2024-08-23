@@ -12,6 +12,7 @@ if [ $# -eq 0 ]
 fi
 
 Dockerimage=$1
+Dockername="spark-on-lambda"
 
 # Fetch the AWS account number
 aws_account=$(aws sts get-caller-identity --query Account --output text)
@@ -25,15 +26,15 @@ fi
 # Get the region defined in the current configuration (default to us-west-2 if none defined)
 aws_region=$(aws configure get region)
 aws_region=${region:-us-east-1}
-reponame="${aws_account}.dkr.ecr.${aws_region}.amazonaws.com/${Dockerimage}:latest"
+reponame="${aws_account}.dkr.ecr.${aws_region}.amazonaws.com/${Dockername}:latest"
 
 # Creates a repo if it does not exist
 echo "Create or replace if repo does not exist...."
-aws ecr describe-repositories --repository-names "${Dockerimage}" > /dev/null 2>&1
+aws ecr describe-repositories --repository-names "${Dockername}" > /dev/null 2>&1
 
 if [ $? -ne 0 ]
 then
-    aws ecr create-repository --repository-name "${Dockerimage}" > /dev/null
+    aws ecr create-repository --repository-name "${Dockername}" > /dev/null
 fi
 
 # Get the AWS ECr login 

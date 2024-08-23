@@ -8,6 +8,7 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 aws ecr create-repository --repository-name spark-on-lambda --image-scanning-configuration scanOnPush=true --image-tag-mutability MUTABLE
 
 docker build -t lambda-pyspark .
+bash push_to_ecr.sh lambda-pyspark
 
 docker tag  lambda-pyspark:latest $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/spark-on-lambda:latest
 docker push $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/spark-on-lambda
