@@ -27,9 +27,23 @@ RUN yum update -y && \
     pip install --upgrade pip && \
     pip install pyspark==$PYSPARK_VERSION boto3 && \
     pip install PyArrow tabulate && \
-    pip install pandas && \    
-    pip install --no-deps pydeequ && \
     yum clean all
+
+# Install pydeequ if FRAMEWORK is DEEQU
+RUN if [ "$FRAMEWORK" = "DEEQU" ] ; then \
+        pip install --no-deps pydeequ && \
+        pip install pandas && \
+        yum clean all; \
+    else \
+        echo FRAMEWORK is ${FRAMEWORK} ; \
+    fi
+
+RUN echo "$FRAMEWORK" | grep -q "DEEQU" && \
+     pip install --no-deps pydeequ && \
+     pip install pandas && \
+     yum clean all && \
+     echo "DEEQU found in FRAMEWORK" || \
+     echo "DEEQU not found in FRAMEWORK"
 
 ENV SPARK_HOME="/var/lang/lib/python3.11/site-packages/pyspark"
 ENV SPARK_VERSION=3.5.2
@@ -60,14 +74,14 @@ ENV CUSTOM_SQL=""
 COPY spark-class $SPARK_HOME/bin/
 RUN chmod -R 755 $SPARK_HOME
 
-# Copy function code
-COPY lambda_function.py ${LAMBDA_TASK_ROOT}
-
 # Copy script code
 COPY spark_script.py ${LAMBDA_TASK_ROOT}
 
 # Copy csv file
 COPY accommodations.csv ${LAMBDA_TASK_ROOT}
 
-# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
-CMD [ "lambda_function.lambda_handler" ]
+# Copy the Pyspark script to container
+COPY sparkLambdaHandler.py ${LAMBDA_TASK_ROOT}
+
+# calling the Lambda handler
+CMD [ "/var/task/sparkLambdaHandler.lambda_handler" ]
