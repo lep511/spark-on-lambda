@@ -6,11 +6,27 @@ from pyspark.sql import SparkSession
 from pyspark.sql import Row
 import json
 import sys
+import os
+import pydeequ
+import uuid
+
+from pydeequ.suggestions import *
+from pydeequ.checks import *
+from pydeequ.verification import *
+from pydeequ.analyzers import *
       
 search_path = sys.path
 print(search_path)
 
-spark = SparkSession.builder.getOrCreate()
+spark = SparkSession.builder \
+    .appName("Deequ-on-AWS-Lambda") \
+    .master("local[*]") \
+    .config("spark.jars.packages", "deequ-2.0.3-spark-3.3.jar")\
+    .config("spark.driver.bindAddress", "127.0.0.1") \
+    .config("spark.driver.memory", "5g") \
+    .config("spark.executor.memory", "5g") \
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+    .getOrCreate()
 
 def lambda_handler(event, context):
     print(f'boto3 version: {boto3.__version__}')
