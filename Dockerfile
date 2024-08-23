@@ -63,8 +63,11 @@ RUN chmod -R 755 $SPARK_HOME
 # Copy function code
 COPY lambda_function.py ${LAMBDA_TASK_ROOT}
 
+# Copy script code
+COPY spark_script.py ${LAMBDA_TASK_ROOT}
+
+# Copy csv file
+COPY accommodations.csv ${LAMBDA_TASK_ROOT}
+
 # Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
 CMD [ "lambda_function.lambda_handler" ]
-
-#ENV SPARK_HOME="/var/lang/lib/python3.11/site-packages/pyspark"
-#ENV JAVA_HOME="/usr/lib/jvm/java-11-openjdk-x86_64"
