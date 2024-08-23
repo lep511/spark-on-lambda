@@ -1,9 +1,9 @@
-FROM public.ecr.aws/lambda/python:3.11
+FROM --platform=linux/amd64 public.ecr.aws/lambda/python:3.11
 
 # Setting the compatible versions of libraries
 ARG HADOOP_VERSION=3.2.4
 ARG AWS_SDK_VERSION=1.11.901
-ARG PYSPARK_VERSION=3.5.2
+ARG PYSPARK_VERSION=3.3.0
 
 #FRAMEWORK will passed during the Docker build. For Apache Iceberg in somecase downgrading PYSPARK_VERSION to 3.2.0 will be good
 ARG FRAMEWORK
@@ -14,7 +14,9 @@ ARG HUDI_FRAMEWORK_VERSION=0.12.2
 ARG ICEBERG_FRAMEWORK_VERSION=3.3_2.12
 ARG ICEBERG_FRAMEWORK_SUB_VERSION=1.0.0
 
-ARG DEEQU_FRAMEWORK_VERSION=2.0.3-spark-3.5
+
+ARG DEEQU_FRAMEWORK_VERSION=2.0.3-spark-3.3
+
 
 # Perform system updates and install dependencies
 RUN yum update -y && \
@@ -26,17 +28,7 @@ RUN yum update -y && \
     yum -y install unzip && \
     pip install --upgrade pip && \
     pip install pyspark==$PYSPARK_VERSION boto3 && \
-    pip install PyArrow tabulate && \
     yum clean all
-
-# Install pydeequ if FRAMEWORK is DEEQU
-RUN if [ "$FRAMEWORK" = "DEEQU" ] ; then \
-        pip install --no-deps pydeequ && \
-        pip install pandas && \
-        yum clean all; \
-    else \
-        echo FRAMEWORK is ${FRAMEWORK} ; \
-    fi
 
 RUN echo "$FRAMEWORK" | grep -q "DEEQU" && \
      pip install --no-deps pydeequ && \
@@ -45,8 +37,9 @@ RUN echo "$FRAMEWORK" | grep -q "DEEQU" && \
      echo "DEEQU found in FRAMEWORK" || \
      echo "DEEQU not found in FRAMEWORK"
 
-ENV SPARK_HOME="/var/lang/lib/python3.11/site-packages/pyspark"
-ENV SPARK_VERSION=3.5.2
+# Set environment variables for PySpark
+ENV SPARK_HOME="/var/lang/lib/python3.8/site-packages/pyspark"
+ENV SPARK_VERSION=3.3.0
 ENV PATH=$PATH:$SPARK_HOME/bin
 ENV PATH=$PATH:$SPARK_HOME/sbin
 ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.9-src.zip:/home/glue_functions:$PYTHONPATH
@@ -80,8 +73,8 @@ COPY spark_script.py ${LAMBDA_TASK_ROOT}
 # Copy csv file
 COPY accommodations.csv ${LAMBDA_TASK_ROOT}
 
-# Copy the Pyspark script to container
-COPY sparkLambdaHandler.py ${LAMBDA_TASK_ROOT}
+# Copy function code
+COPY lambda_function.py ${LAMBDA_TASK_ROOT}
 
-# calling the Lambda handler
-CMD [ "/var/task/sparkLambdaHandler.lambda_handler" ]
+# Set the CMD to your handler (could also be done as a parameter override outside of the Dockerfile)
+CMD [ "lambda_function.lambda_handler" ]

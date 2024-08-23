@@ -7,10 +7,9 @@ sudo ./aws/install
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 aws ecr create-repository --repository-name spark-on-lambda --image-scanning-configuration scanOnPush=true --image-tag-mutability MUTABLE
 
-export FRAMEWORK="DEEQU"
 # FRAMEWORK values: DEEQU, ICEBERG, REDSHIFT, SNOWFLAKE, DELTA, HUDI
-
-docker build platform linux/amd64 --build-arg FRAMEWORK=$FRAMEWORK -t lambda-pyspark .
+export FRAMEWORK="DEEQU"
+docker build --build-arg FRAMEWORK=$FRAMEWORK -t lambda-pyspark .
 bash push_to_ecr.sh lambda-pyspark
 
 docker tag  lambda-pyspark:latest $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/spark-on-lambda:latest
