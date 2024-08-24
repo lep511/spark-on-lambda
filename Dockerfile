@@ -70,9 +70,6 @@ RUN chmod -R 755 $SPARK_HOME
 # Copy script code
 COPY spark_script.py ${LAMBDA_TASK_ROOT}
 
-# Copy csv file
-COPY accommodations.csv ${LAMBDA_TASK_ROOT}
-
 # Copy function code
 COPY lambda_function.py ${LAMBDA_TASK_ROOT}
 
