@@ -34,21 +34,23 @@ from pyspark.sql.functions import *
   Select the Lambda architecture (arm64 or x84_64) based on the your source machine where docker build have been executed
 """
 
-if __name__ == "__main__":
+aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
 
+def main():
     input_path = "accommodations.csv"
     output_path = "./"
 
     spark = SparkSession.builder \
-        .appName("Deequ-on-AWS-Lambda") \
+        .appName("Spark-on-AWS-Lambda") \
         .master("local[*]") \
-        .config("spark.jars.packages", "deequ-2.0.3-spark-3.3.jar")\
         .config("spark.driver.bindAddress", "127.0.0.1") \
         .config("spark.driver.memory", "5g") \
         .config("spark.executor.memory", "5g") \
-        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
-        .getOrCreate()
-
+        .config("spark.hadoop.fs.s3a.access.key", aws_access_key_id) \
+        .config("spark.hadoop.fs.s3a.secret.key", aws_secret_access_key) \
+        .config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider") \
+        .enableHiveSupport().getOrCreate()
 
     # Reading the csv file form input_path
     dataset = spark.read.option('header', 'true').option("delimiter", ";").csv(input_path)
