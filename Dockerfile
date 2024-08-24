@@ -39,7 +39,7 @@ RUN echo "$FRAMEWORK" | grep -q "DEEQU" && \
 
 # Set environment variables for PySpark
 ENV SPARK_HOME="/var/lang/lib/python3.11/site-packages/pyspark"
-ENV SPARK_VERSION=3.5.2
+ENV SPARK_VERSION=3.5
 ENV PATH=$PATH:$SPARK_HOME/bin
 ENV PATH=$PATH:$SPARK_HOME/sbin
 ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.9-src.zip:/home/glue_functions:$PYTHONPATH
