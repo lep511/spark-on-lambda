@@ -10,21 +10,17 @@ from pydeequ.analyzers import *
 
 from datetime import datetime
 
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Row, DataFrame
 from pyspark.sql.functions import *
 
+import json
+import pandas as pd
 """
  Function that gets triggered when AWS Lambda is running.
  We are using the example from Redshift documentation
  https://docs.aws.amazon.com/redshift/latest/dg/spatial-tutorial.html#spatial-tutorial-test-data
  
  We are using PyDeequ library which uses Apache 2.0 license. Please refer to LICENSE.Apache.txt file for more details.
-
-  Add below parameters in the lambda function Environment Variables
-  SCRIPT_BUCKET         BUCKET WHERE YOU SAVE THIS SCRIPT
-  SPARK_SCRIPT          THE SCRIPT NAME AND PATH
-  INPUT_PATH            s3a://redshift-downloads/spatial-data/accommodations.csv
-  OUTPUT_PATH           THE PATH WHERE THE VERIFICATION RESULTS AND METRICS WILL BE STORED
 
   Lambda General Configuration for above input file. Based on the input file size, the memory can be updated.
   Memory                 2048 MB
@@ -34,13 +30,10 @@ from pyspark.sql.functions import *
   Select the Lambda architecture (arm64 or x84_64) based on the your source machine where docker build have been executed
 """
 
-aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
-
 def main():
-    input_path = "accommodations.csv"
-    output_path = "./"
-
+    aws_access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+    aws_secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+ 
     spark = SparkSession.builder \
         .appName("Spark-on-AWS-Lambda") \
         .master("local[*]") \
@@ -52,50 +45,42 @@ def main():
         .config("spark.hadoop.fs.s3a.aws.credentials.provider","org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider") \
         .enableHiveSupport().getOrCreate()
 
-    # Reading the csv file form input_path
-    dataset = spark.read.option('header', 'true').option("delimiter", ";").csv(input_path)
-
-    print("Schema of input file:")
-    dataset.printSchema()
+    # Reading the parquet file
+    df = spark.read.parquet("s3a://aws-bigdata-blog/generated_synthetic_reviews/data/product_category=Electronics/")
+    print(df.printSchema())
 
     analysisResult = AnalysisRunner(spark) \
-                    .onData(dataset) \
-                    .addAnalyzer(Size()) \
-                    .addAnalyzer(Completeness("host_name")) \
-                    .addAnalyzer(ApproxCountDistinct("neighbourhood")) \
-                    .addAnalyzer(Mean("price")) \
-                    .run()
-
+                        .onData(df) \
+                        .addAnalyzer(Size()) \
+                        .addAnalyzer(Completeness("review_id")) \
+                        .addAnalyzer(Distinctness("review_id")) \
+                        .addAnalyzer(Mean("star_rating")) \
+                        .addAnalyzer(Compliance("top star_rating", "star_rating >= 4.0")) \
+                        .addAnalyzer(Correlation("total_votes", "star_rating")) \
+                        .addAnalyzer(Correlation("total_votes", "helpful_votes")) \
+                        .run()
+                        
     analysisResult_df = AnalyzerContext.successMetricsAsDataFrame(spark, analysisResult)
-    print("Showing AnalysisResults:")
-    analysisResult_df.show()
+    pd.options.display.float_format = '{:,.7g}'.format
+    print(analysisResult_df.show())
+    analysisResult = AnalysisRunner(spark) \
+                        .onData(df) \
+                        .addAnalyzer(Compliance("after-1996 review_year", 
+    "review_year >= 1996")) \
+                        .addAnalyzer(Compliance("before-2017 review_year", 
+    "review_year <= 2017")) \
+                        .run()
+    analysisResult_pd_df = AnalyzerContext.successMetricsAsDataFrame(spark,
+    analysisResult, pandas=True)
+    print(analysisResult_pd_df)
 
-    check = Check(spark, CheckLevel.Warning, "Accomodations")
-
-    checkResult = VerificationSuite(spark) \
-        .onData(dataset) \
-        .addCheck(
-            check.hasSize(lambda x: x >= 22248) \
-            .isComplete("name")  \
-            .isUnique("id")  \
-            .isComplete("host_name")  \
-            .isComplete("neighbourhood")  \
-            .isComplete("price")  \
-            .isNonNegative("price")) \
-        .run()
-
-
-    print("Showing VerificationResults:")
-    checkResult_df = VerificationResult.checkResultsAsDataFrame(spark, checkResult)
-    checkResult_df.show()
-
-    checkResult_df.repartition(1).write.mode('overwrite').csv(output_path+"/verification-results/", sep=',')
-
-    print("Showing VerificationResults metrics:")
-    checkResult_df = VerificationResult.successMetricsAsDataFrame(spark, checkResult)
-    checkResult_df.show()
-
-    checkResult_df.repartition(1).write.mode('overwrite').csv(output_path+"/verification-results-metrics/", sep=',')
-
-    spark.sparkContext._gateway.shutdown_callback_server()
-    spark.stop()
+    analysisResult = AnalysisRunner(spark) \
+                        .onData(df) \
+                        .addAnalyzer(Compliance("range1996to2017 review_year",
+    "review_year >= 1996 and review_year <= 2017")) \
+                        .addAnalyzer(Compliance("values insight", 
+    "insight == 'Y' or insight == 'N'")) \
+                        .run()
+    analysisResult_pd_df = AnalyzerContext.successMetricsAsDataFrame(spark, analysisResult, pandas=True)
+    print(analysisResult_pd_df)
+    
