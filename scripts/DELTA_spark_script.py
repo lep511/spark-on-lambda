@@ -25,7 +25,7 @@ import os
 
 """
 
-def spark_script():
+def main():
     input_path = os.environ['input_path']
     output_path = os.environ['output_path']
 
